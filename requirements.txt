@@ -1,5 +1,8 @@
-babel==2.9.0
-python-dateutil==2.6.0
-flask-moment==0.11.0
-flask-wtf==0.14.3
-flask_sqlalchemy==2.4.4
+Babel==2.12.1
+Fabric==3.2.1
+Flask==2.3.2
+Flask_Moment==1.0.5
+flask_sqlalchemy==3.0.5
+Flask_WTF==1.1.1
+python_dateutil==2.8.2
+WTForms==3.0.1
