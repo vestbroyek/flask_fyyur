@@ -7,7 +7,6 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 DEBUG = True
 
 # Connect to the database
-
-
-# TODO IMPLEMENT DATABASE URL
-SQLALCHEMY_DATABASE_URI = "postgresql://maurits@localhost:5432/fyyur"
+# Docker database URI
+# run with: docker run -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=fyyur --rm postgres
+SQLALCHEMY_DATABASE_URI = "postgresql://postgres@localhost:5432/fyyur"
