@@ -1,7 +1,6 @@
 # ----------------------------------------------------------------------------#
 # Imports
 # ----------------------------------------------------------------------------#
-
 import json
 import dateutil.parser
 from datetime import datetime
@@ -28,7 +27,6 @@ import sys
 # ----------------------------------------------------------------------------#
 # App Config.
 # ----------------------------------------------------------------------------#
-
 app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object("config")
@@ -40,11 +38,10 @@ db = SQLAlchemy(app)
 
 migrate = Migrate(app, db)
 
+
 # ----------------------------------------------------------------------------#
 # Models.
 # ----------------------------------------------------------------------------#
-
-
 class Venue(db.Model):
     __tablename__ = "venues"
 
@@ -92,8 +89,6 @@ class Show(db.Model):
 # ----------------------------------------------------------------------------#
 # Filters.
 # ----------------------------------------------------------------------------#
-
-
 def format_datetime(value, format="medium"):
     if isinstance(value, str):
         date = dateutil.parser.parse(value)
@@ -108,11 +103,10 @@ def format_datetime(value, format="medium"):
 
 app.jinja_env.filters["datetime"] = format_datetime
 
+
 # ----------------------------------------------------------------------------#
 # Controllers.
 # ----------------------------------------------------------------------------#
-
-
 @app.route("/")
 def index():
     return render_template("pages/home.html")
@@ -120,11 +114,8 @@ def index():
 
 #  Venues
 #  ----------------------------------------------------------------
-
-
 @app.route("/venues")
 def venues():
-
     # Get unique city-state combinations
     city_states = db.session.query(Venue.city, Venue.state).distinct().all()
     data = []
@@ -132,24 +123,24 @@ def venues():
     for city, state in city_states:
         # Fetch venues for this city and state
         venues = db.session.query(Venue).filter_by(city=city, state=state).all()
-        
+
         venue_data = []
-        
+
         for venue in venues:
             # Count upcoming shows for this venue
-            num_upcoming_shows = len([show for show in venue.shows if show.start_time > datetime.now()])
-            
-            venue_data.append({
-                "id": venue.id,
-                "name": venue.name,
-                "num_upcoming_shows": num_upcoming_shows
-            })
+            num_upcoming_shows = len(
+                [show for show in venue.shows if show.start_time > datetime.now()]
+            )
 
-        data.append({
-            "city": city,
-            "state": state,
-            "venues": venue_data
-        })
+            venue_data.append(
+                {
+                    "id": venue.id,
+                    "name": venue.name,
+                    "num_upcoming_shows": num_upcoming_shows,
+                }
+            )
+
+        data.append({"city": city, "state": state, "venues": venue_data})
 
     return render_template("pages/venues.html", areas=data)
 
@@ -178,28 +169,29 @@ def search_venues():
 
 @app.route("/venues/<int:venue_id>")
 def show_venue(venue_id):
-
     # Get venue using venue_id
     venue = Venue.query.get(venue_id)
 
     if venue:
         # Get upcoming shows
         # print(type(venue.shows[0].start_time))
-        venue.upcoming_shows = [show for show in venue.shows if show.start_time > datetime.now()]
-        # Get past shows
-        venue.past_shows = [show for show in venue.shows if show.start_time < datetime.now()] 
+        venue.upcoming_shows = [
+            show for show in venue.shows if show.start_time > datetime.now()
+        ]
+        # Get past shows
+        venue.past_shows = [
+            show for show in venue.shows if show.start_time < datetime.now()
+        ]
 
         return render_template("pages/show_venue.html", venue=venue)
     else:
         # If no such venue exists, flash and redirect to venues home
         flash("Venue not found.")
-        return redirect(url_for('venues'))
-    
+        return redirect(url_for("venues"))
+
 
 #  Create Venue
 #  ----------------------------------------------------------------
-
-
 @app.route("/venues/create", methods=["GET"])
 def create_venue_form():
     form = VenueForm()
@@ -228,7 +220,12 @@ def create_venue_submission():
             "seeking_description",
         ]
 
-        venue_data = {field: request.form.getlist(field) if field == 'genres' else request.form.get(field) for field in venue_fields}
+        venue_data = {
+            field: request.form.getlist(field)
+            if field == "genres"
+            else request.form.get(field)
+            for field in venue_fields
+        }
 
         # Need to figure out best way to convert this to bool
         if venue_data["seeking_talent"] == "y":
@@ -304,9 +301,13 @@ def show_artist(artist_id):
     # Get artist by ID
     artist = Artist.query.get(artist_id)
 
-    # Set shows
-    artist.upcoming_shows = [show for show in artist.shows if show.start_time > datetime.now()]
-    artist.past_shows = [show for show in artist.shows if show.start_time < datetime.now()]
+    # Set shows
+    artist.upcoming_shows = [
+        show for show in artist.shows if show.start_time > datetime.now()
+    ]
+    artist.past_shows = [
+        show for show in artist.shows if show.start_time < datetime.now()
+    ]
 
     return render_template("pages/show_artist.html", artist=artist)
 
@@ -371,8 +372,6 @@ def edit_venue_submission(venue_id):
 
 #  Create Artist
 #  ----------------------------------------------------------------
-
-
 @app.route("/artists/create", methods=["GET"])
 def create_artist_form():
     form = ArtistForm()
@@ -398,7 +397,12 @@ def create_artist_submission():
             "seeking_description",
         ]
 
-        artist_data = {field: request.form.getlist(field) if field == 'genres' else request.form.get(field) for field in artist_fields}
+        artist_data = {
+            field: request.form.getlist(field)
+            if field == "genres"
+            else request.form.get(field)
+            for field in artist_fields
+        }
 
         if artist_data["seeking_venue"] == "y":
             artist_data["seeking_venue"] = True
@@ -431,13 +435,11 @@ def create_artist_submission():
 
 #  Shows
 #  ----------------------------------------------------------------
-
-
 @app.route("/shows")
 def shows():
     shows = Show.query.all()
 
-    # Set details from related models
+    # Set details from related models
     for show in shows:
         show.venue_name = show.venue.name
         show.artist_name = show.artist.name
@@ -474,8 +476,8 @@ def create_show_submission():
         db.session.close()
 
     if error:
-       flash('An error occurred. Show could not be listed.') 
-       return render_template("pages/home.html")
+        flash("An error occurred. Show could not be listed.")
+        return render_template("pages/home.html")
     else:
         flash("Show was successfully listed!")
         return render_template("pages/home.html")
@@ -504,14 +506,6 @@ if not app.debug:
 # ----------------------------------------------------------------------------#
 # Launch.
 # ----------------------------------------------------------------------------#
-
 # Default port:
 if __name__ == "__main__":
     app.run()
-
-# Or specify port manually:
-"""
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
-"""
