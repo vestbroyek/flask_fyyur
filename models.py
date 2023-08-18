@@ -19,7 +19,7 @@ class Venue(db.Model):
     website = db.Column(db.String(500))
     seeking_talent = db.Column(db.Boolean)
     seeking_description = db.Column(db.String(500))
-    shows = db.relationship("Show", backref="venue")
+    shows = db.relationship("Show", cascade="all, delete", backref="venue")
 
 
 class Artist(db.Model):

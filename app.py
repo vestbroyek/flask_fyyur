@@ -13,6 +13,7 @@ from flask import (
 )
 from flask_migrate import Migrate
 import logging
+from sqlalchemy.exc import IntegrityError
 from logging import Formatter, FileHandler
 from config import app, db
 from models import Artist, Venue, Show, artist_fields, venue_fields
@@ -183,11 +184,14 @@ def delete_venue(venue_id):
 
     if method == "DELETE":
         try:
-            Venue.query.filter_by(id=venue_id).delete()
+            Venue.query.filter_by(id=venue_id).delete().first()
             db.session.commit()
             flash("Venue successfully deleted.")
-        except:
+        except IntegrityError:
             print(sys.exc_info())
+            db.session.rollback()
+            flash("Venue could not be deleted because there are shows listed for it.")
+        except Exception:
             db.session.rollback()
             flash("Venue could not be deleted.")
         finally:
