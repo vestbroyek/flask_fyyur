@@ -1,116 +1,28 @@
 # ----------------------------------------------------------------------------#
 # Imports
 # ----------------------------------------------------------------------------#
-import json
 import dateutil.parser
 from datetime import datetime
 import babel
 from flask import (
-    Flask,
     render_template,
     request,
-    Response,
     flash,
     redirect,
     url_for,
 )
 from flask_migrate import Migrate
-from flask_moment import Moment
-from flask_sqlalchemy import SQLAlchemy
 import logging
 from logging import Formatter, FileHandler
-from flask_wtf import Form
+from config import app, db
+from models import Artist, Venue, Show, artist_fields, venue_fields
 from forms import *
-from config import SQLALCHEMY_DATABASE_URI
 import sys
 
 # ----------------------------------------------------------------------------#
 # App Config.
 # ----------------------------------------------------------------------------#
-app = Flask(__name__)
-moment = Moment(app)
-app.config.from_object("config")
-app.config["DEBUG"] = True
-app.config["FLASK_ENV"] = "development"
-app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
-
-db = SQLAlchemy(app)
-
 migrate = Migrate(app, db)
-
-artist_fields = [
-    "name",
-    "city",
-    "state",
-    "phone",
-    "image_link",
-    "genres",
-    "facebook_link",
-    "website",
-    "seeking_venue",
-    "seeking_description",
-]
-
-venue_fields = [
-    "id",
-    "name",
-    "city",
-    "state",
-    "address",
-    "phone",
-    "image_link",
-    "facebook_link",
-    "genres",
-    "website",
-    "seeking_talent",
-    "seeking_description",
-]
-
-# ----------------------------------------------------------------------------#
-# Models.
-# ----------------------------------------------------------------------------#
-class Venue(db.Model):
-    __tablename__ = "venues"
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    address = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
-    website = db.Column(db.String(500))
-    seeking_talent = db.Column(db.Boolean)
-    seeking_description = db.Column(db.String(500))
-    shows = db.relationship("Show", backref="venue")
-
-
-class Artist(db.Model):
-    __tablename__ = "artists"
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    website = db.Column(db.String(500))
-    seeking_venue = db.Column(db.Boolean)
-    seeking_description = db.Column(db.String(500))
-    shows = db.relationship("Show", backref="artist")
-
-
-class Show(db.Model):
-    __tablename__ = "shows"
-
-    id = db.Column(db.Integer, primary_key=True)
-    venue_id = db.Column(db.Integer, db.ForeignKey("venues.id"))
-    artist_id = db.Column(db.Integer, db.ForeignKey("artists.id"))
-    start_time = db.Column(db.DateTime)
 
 
 # ----------------------------------------------------------------------------#
@@ -174,19 +86,16 @@ def venues():
 
 @app.route("/venues/search", methods=["POST"])
 def search_venues():
-    # Get search term
+    # Get search term
     search_term = request.form.get("search_term", "")
 
-    # Find venues based on substring search
+    # Find venues based on substring search
     venues = Venue.query.filter(Venue.name.icontains(search_term)).all()
 
     # Check count of results
     result_count = len(venues)
-    
-    response = {
-        "count": result_count,
-        "data": venues
-    }
+
+    response = {"count": result_count, "data": venues}
     return render_template(
         "pages/search_venues.html",
         results=response,
@@ -270,9 +179,9 @@ def create_venue_submission():
 
 @app.route("/venues/<venue_id>", methods=["POST"])
 def delete_venue(venue_id):
-    method = request.form.get('_method', 'POST')
+    method = request.form.get("_method", "POST")
 
-    if method == 'DELETE':
+    if method == "DELETE":
         try:
             Venue.query.filter_by(id=venue_id).delete()
             db.session.commit()
@@ -296,18 +205,15 @@ def artists():
 
 @app.route("/artists/search", methods=["POST"])
 def search_artists():
-    # Get search term
+    # Get search term
     search_term = request.form.get("search_term", "")
-    # Find venues based on substring search
+    # Find venues based on substring search
     artists = Artist.query.filter(Artist.name.icontains(search_term)).all()
 
     # Check count of results
     result_count = len(artists)
-    
-    response = {
-        "count": result_count,
-        "data": artists
-    }
+
+    response = {"count": result_count, "data": artists}
 
     return render_template(
         "pages/search_artists.html",
@@ -339,8 +245,8 @@ def edit_artist(artist_id):
     # Get artist
     artist = db.session.get(Artist, artist_id)
 
-    # Fix genres field so that it can prepopulate
-    artist.genres = artist.genres.strip('{}').split(',')
+    # Fix genres field so that it can prepopulate
+    artist.genres = artist.genres.strip("{}").split(",")
 
     # Populate form
     form = ArtistForm(obj=artist)
@@ -350,13 +256,12 @@ def edit_artist(artist_id):
 
 @app.route("/artists/<int:artist_id>/edit", methods=["POST"])
 def edit_artist_submission(artist_id):
-
     # Get artist
     # Updated syntax to avoid deprecation warning
     artist = db.session.get(Artist, artist_id)
 
     try:
-        # Get data from form
+        # Get data from form
         artist_data = {
             field: request.form.getlist(field)
             if field == "genres"
@@ -368,18 +273,18 @@ def edit_artist_submission(artist_id):
             setattr(artist, field, value)
 
         # Deal with 'y' for seeking venue rather than bool
-        if artist.seeking_venue == 'y':
+        if artist.seeking_venue == "y":
             artist.seeking_venue = True
         else:
             artist.seeking_venue = False
 
-        # Save to database
+        # Save to database
         db.session.add(artist)
         db.session.commit()
         return redirect(url_for("show_artist", artist_id=artist_id))
 
     except:
-        flash('Could not update this artist')
+        flash("Could not update this artist")
         return redirect(url_for("show_artist", artist_id=artist_id))
 
 
@@ -388,8 +293,8 @@ def edit_venue(venue_id):
     # Get artist
     venue = db.session.get(Venue, venue_id)
 
-    # Fix genres field so that it can prepopulate
-    venue.genres = venue.genres.strip('{}').split(',')
+    # Fix genres field so that it can prepopulate
+    venue.genres = venue.genres.strip("{}").split(",")
 
     # Populate form
     form = VenueForm(obj=venue)
@@ -399,7 +304,6 @@ def edit_venue(venue_id):
 
 @app.route("/venues/<int:venue_id>/edit", methods=["POST"])
 def edit_venue_submission(venue_id):
-
     # Get venue
     # Updated syntax to avoid deprecation warning
     venue = db.session.get(Venue, venue_id)
@@ -407,7 +311,7 @@ def edit_venue_submission(venue_id):
     print("Venue ID: ", venue.id)
 
     try:
-        # Get data from form
+        # Get data from form
         venue_data = {
             field: request.form.getlist(field)
             if field == "genres"
@@ -422,19 +326,19 @@ def edit_venue_submission(venue_id):
         venue.id = venue_id
 
         # Deal with 'y' for seeking venue rather than bool
-        if venue.seeking_talent == 'y':
+        if venue.seeking_talent == "y":
             venue.seeking_talent = True
         else:
             venue.seeking_talent = False
 
-        # Save to database
+        # Save to database
         db.session.add(venue)
         db.session.commit()
         return redirect(url_for("show_venue", venue_id=venue_id))
 
     except:
         print(sys.exc_info())
-        flash('Could not update this venue')
+        flash("Could not update this venue")
         return redirect(url_for("show_venue", venue_id=venue_id))
 
 
