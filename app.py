@@ -38,6 +38,33 @@ db = SQLAlchemy(app)
 
 migrate = Migrate(app, db)
 
+artist_fields = [
+    "name",
+    "city",
+    "state",
+    "phone",
+    "image_link",
+    "genres",
+    "facebook_link",
+    "website",
+    "seeking_venue",
+    "seeking_description",
+]
+
+venue_fields = [
+    "id",
+    "name",
+    "city",
+    "state",
+    "address",
+    "phone",
+    "image_link",
+    "facebook_link",
+    "genres",
+    "website",
+    "seeking_talent",
+    "seeking_description",
+]
 
 # ----------------------------------------------------------------------------#
 # Models.
@@ -205,21 +232,6 @@ def create_venue_submission():
 
     try:
         # Grab form data
-        venue_fields = [
-            "id",
-            "name",
-            "city",
-            "state",
-            "address",
-            "phone",
-            "image_link",
-            "facebook_link",
-            "genres",
-            "website",
-            "seeking_talent",
-            "seeking_description",
-        ]
-
         venue_data = {
             field: request.form.getlist(field)
             if field == "genres"
@@ -256,14 +268,22 @@ def create_venue_submission():
         return render_template("pages/home.html")
 
 
-@app.route("/venues/<venue_id>", methods=["DELETE"])
+@app.route("/venues/<venue_id>", methods=["POST"])
 def delete_venue(venue_id):
-    # TODO: Complete this endpoint for taking a venue_id, and using
-    # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
+    method = request.form.get('_method', 'POST')
 
-    # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
-    # clicking that button delete it from the db then redirect the user to the homepage
-    return None
+    if method == 'DELETE':
+        try:
+            Venue.query.filter_by(id=venue_id).delete()
+            db.session.commit()
+            flash("Venue successfully deleted.")
+        except:
+            print(sys.exc_info())
+            db.session.rollback()
+            flash("Venue could not be deleted.")
+        finally:
+            db.session.close()
+        return redirect(url_for("venues"))
 
 
 #  Artists
@@ -316,58 +336,106 @@ def show_artist(artist_id):
 #  ----------------------------------------------------------------
 @app.route("/artists/<int:artist_id>/edit", methods=["GET"])
 def edit_artist(artist_id):
-    form = ArtistForm()
-    artist = {
-        "id": 4,
-        "name": "Guns N Petals",
-        "genres": ["Rock n Roll"],
-        "city": "San Francisco",
-        "state": "CA",
-        "phone": "326-123-5000",
-        "website": "https://www.gunsnpetalsband.com",
-        "facebook_link": "https://www.facebook.com/GunsNPetals",
-        "seeking_venue": True,
-        "seeking_description": "Looking for shows to perform at in the San Francisco Bay Area!",
-        "image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-    }
-    # TODO: populate form with fields from artist with ID <artist_id>
+    # Get artist
+    artist = db.session.get(Artist, artist_id)
+
+    # Fix genres field so that it can prepopulate
+    artist.genres = artist.genres.strip('{}').split(',')
+
+    # Populate form
+    form = ArtistForm(obj=artist)
+
     return render_template("forms/edit_artist.html", form=form, artist=artist)
 
 
 @app.route("/artists/<int:artist_id>/edit", methods=["POST"])
 def edit_artist_submission(artist_id):
-    # TODO: take values from the form submitted, and update existing
-    # artist record with ID <artist_id> using the new attributes
 
-    return redirect(url_for("show_artist", artist_id=artist_id))
+    # Get artist
+    # Updated syntax to avoid deprecation warning
+    artist = db.session.get(Artist, artist_id)
+
+    try:
+        # Get data from form
+        artist_data = {
+            field: request.form.getlist(field)
+            if field == "genres"
+            else request.form.get(field)
+            for field in artist_fields
+        }
+
+        for field, value in artist_data.items():
+            setattr(artist, field, value)
+
+        # Deal with 'y' for seeking venue rather than bool
+        if artist.seeking_venue == 'y':
+            artist.seeking_venue = True
+        else:
+            artist.seeking_venue = False
+
+        # Save to database
+        db.session.add(artist)
+        db.session.commit()
+        return redirect(url_for("show_artist", artist_id=artist_id))
+
+    except:
+        flash('Could not update this artist')
+        return redirect(url_for("show_artist", artist_id=artist_id))
 
 
 @app.route("/venues/<int:venue_id>/edit", methods=["GET"])
 def edit_venue(venue_id):
-    form = VenueForm()
-    venue = {
-        "id": 1,
-        "name": "The Musical Hop",
-        "genres": ["Jazz", "Reggae", "Swing", "Classical", "Folk"],
-        "address": "1015 Folsom Street",
-        "city": "San Francisco",
-        "state": "CA",
-        "phone": "123-123-1234",
-        "website": "https://www.themusicalhop.com",
-        "facebook_link": "https://www.facebook.com/TheMusicalHop",
-        "seeking_talent": True,
-        "seeking_description": "We are on the lookout for a local artist to play every two weeks. Please call us.",
-        "image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60",
-    }
-    # TODO: populate form with values from venue with ID <venue_id>
+    # Get artist
+    venue = db.session.get(Venue, venue_id)
+
+    # Fix genres field so that it can prepopulate
+    venue.genres = venue.genres.strip('{}').split(',')
+
+    # Populate form
+    form = VenueForm(obj=venue)
+
     return render_template("forms/edit_venue.html", form=form, venue=venue)
 
 
 @app.route("/venues/<int:venue_id>/edit", methods=["POST"])
 def edit_venue_submission(venue_id):
-    # TODO: take values from the form submitted, and update existing
-    # venue record with ID <venue_id> using the new attributes
-    return redirect(url_for("show_venue", venue_id=venue_id))
+
+    # Get venue
+    # Updated syntax to avoid deprecation warning
+    venue = db.session.get(Venue, venue_id)
+
+    print("Venue ID: ", venue.id)
+
+    try:
+        # Get data from form
+        venue_data = {
+            field: request.form.getlist(field)
+            if field == "genres"
+            else request.form.get(field)
+            for field in venue_fields
+        }
+
+        for field, value in venue_data.items():
+            setattr(venue, field, value)
+
+        # Unsure why venue ID gets set to None, set again manually
+        venue.id = venue_id
+
+        # Deal with 'y' for seeking venue rather than bool
+        if venue.seeking_talent == 'y':
+            venue.seeking_talent = True
+        else:
+            venue.seeking_talent = False
+
+        # Save to database
+        db.session.add(venue)
+        db.session.commit()
+        return redirect(url_for("show_venue", venue_id=venue_id))
+
+    except:
+        print(sys.exc_info())
+        flash('Could not update this venue')
+        return redirect(url_for("show_venue", venue_id=venue_id))
 
 
 #  Create Artist
@@ -384,19 +452,6 @@ def create_artist_submission():
     error = False
 
     try:
-        artist_fields = [
-            "name",
-            "city",
-            "state",
-            "phone",
-            "image_link",
-            "genres",
-            "facebook_link",
-            "website",
-            "seeking_venue",
-            "seeking_description",
-        ]
-
         artist_data = {
             field: request.form.getlist(field)
             if field == "genres"
@@ -407,7 +462,7 @@ def create_artist_submission():
         if artist_data["seeking_venue"] == "y":
             artist_data["seeking_venue"] = True
         else:
-            pass
+            artist_data["seeking_venue"] = False
 
         new_artist = Artist(**artist_data)
 
