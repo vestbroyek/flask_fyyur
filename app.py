@@ -1,9 +1,10 @@
 # ----------------------------------------------------------------------------#
 # Imports
 # ----------------------------------------------------------------------------#
-import dateutil.parser
-from datetime import datetime
 import babel
+from config import app, db
+from datetime import datetime
+import dateutil.parser
 from flask import (
     render_template,
     request,
@@ -12,12 +13,11 @@ from flask import (
     url_for,
 )
 from flask_migrate import Migrate
-import logging
-from sqlalchemy.exc import IntegrityError
-from logging import Formatter, FileHandler
-from config import app, db
-from models import Artist, Venue, Show, artist_fields, venue_fields
 from forms import *
+import logging
+from logging import Formatter, FileHandler
+from models import Artist, Venue, Show, artist_fields, venue_fields
+from sqlalchemy.exc import IntegrityError
 import sys
 
 # ----------------------------------------------------------------------------#
