@@ -1,8 +1,10 @@
 Babel==2.12.1
 Fabric==3.2.1
 Flask==2.3.2
+Flask-Migrate==4.0.4
 Flask_Moment==1.0.5
 flask_sqlalchemy==3.0.5
 Flask_WTF==1.1.1
+psycopg2-binary==2.9.7
 python_dateutil==2.8.2
 WTForms==3.0.1
