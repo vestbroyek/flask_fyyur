@@ -184,7 +184,7 @@ def delete_venue(venue_id):
 
     if method == "DELETE":
         try:
-            Venue.query.filter_by(id=venue_id).delete().first()
+            Venue.query.filter_by(id=venue_id).delete()
             db.session.commit()
             flash("Venue successfully deleted.")
         except IntegrityError:
@@ -192,6 +192,7 @@ def delete_venue(venue_id):
             db.session.rollback()
             flash("Venue could not be deleted because there are shows listed for it.")
         except Exception:
+            print(sys.exc_info())
             db.session.rollback()
             flash("Venue could not be deleted.")
         finally:
