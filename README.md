@@ -19,7 +19,7 @@ Overall:
 * Models are located in `models.py`.
 * Controllers and the app's routes are located in `app.py`.
 * The web frontend is located in `templates/`, which builds static assets deployed to the web server at `static/`.
-* Web forms for creating data are located in `form.py`
+* Web forms for creating data are located in `forms.py`.
 
 Main folders:
 
@@ -134,4 +134,4 @@ Finally, it's also possible to delete venues, but only if they don't have shows 
 
 When we click Delete, we see a message popping up saying the venue has been deleted, and it no longer shows up on our list of venues:
 
-![](readme_assets/venue_detail_2.png)
+![](readme_assets/venue_delete.png)
