@@ -21,5 +21,6 @@ app.config.from_object("config")
 app.config["DEBUG"] = True
 app.config["FLASK_ENV"] = "development"
 app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
+app.config['WTF_CSRF_ENABLED'] = False
 
 db = SQLAlchemy(app)
