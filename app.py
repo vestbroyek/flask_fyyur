@@ -19,6 +19,7 @@ from logging import Formatter, FileHandler
 from models import Artist, Venue, Show, artist_fields, venue_fields
 from sqlalchemy.exc import IntegrityError
 import sys
+from utils import process_array
 
 # ----------------------------------------------------------------------------#
 # App Config.
@@ -120,6 +121,9 @@ def show_venue(venue_id):
             show for show in venue.shows if show.start_time < datetime.now()
         ]
 
+        # clean up genres
+        venue.genres = process_array(venue.genres)
+
         return render_template("pages/show_venue.html", venue=venue)
     else:
         # If no such venue exists, flash and redirect to venues home
@@ -138,44 +142,41 @@ def create_venue_form():
 @app.route("/venues/create", methods=["POST"])
 def create_venue_submission():
     # Set up error handling
-    error = False
 
-    try:
-        # Grab form data
-        venue_data = {
-            field: request.form.getlist(field)
-            if field == "genres"
-            else request.form.get(field)
-            for field in venue_fields
-        }
+    form = VenueForm()
 
-        # Need to figure out best way to convert this to bool
-        if venue_data["seeking_talent"] == "y":
-            venue_data["seeking_talent"] = True
-        else:
-            pass
+    if form.validate_on_submit():
 
-        new_venue = Venue(**venue_data)
+        try:
+            # Grab form data
+            venue_data = {
+                field: request.form.getlist(field)
+                if field == "genres"
+                else request.form.get(field)
+                for field in venue_fields
+            }
 
-        db.session.add(new_venue)
-        db.session.commit()
+            # Need to figure out best way to convert this to bool
+            if venue_data["seeking_talent"] == "y":
+                venue_data["seeking_talent"] = True
+            else:
+                venue_data["seeking_talent"] = False
 
-    except:
-        error = True
-        db.session.rollback()
-        print(sys.exc_info())
-    finally:
-        db.session.close()
-    if error:
-        flash(
-            "An error occurred. Venue "
-            + request.form.get("name")
-            + " could not be listed."
-        )
-        return render_template("pages/home.html")
+            new_venue = Venue(**venue_data)
+    
+            db.session.add(new_venue)
+            db.session.commit()
+            flash("Venue " + request.form.get("name") + " was successfully listed!")
+
+        except:
+            db.session.rollback()
+            print(sys.exc_info())
+        finally:
+            db.session.close()
     else:
-        flash("Venue " + request.form.get("name") + " was successfully listed!")
-        return render_template("pages/home.html")
+        for field, message in form.errors.items():
+            flash(field + ' - ' + str(message), 'danger')
+    return render_template("pages/home.html")
 
 
 @app.route("/venues/<venue_id>", methods=["POST"])
@@ -231,6 +232,8 @@ def search_artists():
 def show_artist(artist_id):
     # Get artist by ID
     artist = Artist.query.get(artist_id)
+
+    artist.genres = process_array(artist.genres)
 
     # Set shows
     artist.upcoming_shows = [
@@ -357,44 +360,41 @@ def create_artist_form():
 
 @app.route("/artists/create", methods=["POST"])
 def create_artist_submission():
-    # Set up error handling
-    error = False
+    
+    form = ArtistForm()
 
-    try:
-        artist_data = {
-            field: request.form.getlist(field)
-            if field == "genres"
-            else request.form.get(field)
-            for field in artist_fields
-        }
+    if form.validate_on_submit():
 
-        if artist_data["seeking_venue"] == "y":
-            artist_data["seeking_venue"] = True
-        else:
-            artist_data["seeking_venue"] = False
+        try:
+            artist_data = {
+                field: request.form.getlist(field)
+                if field == "genres"
+                else request.form.get(field)
+                for field in artist_fields
+            }
 
-        new_artist = Artist(**artist_data)
+            if artist_data["seeking_venue"] == "y":
+                artist_data["seeking_venue"] = True
+            else:
+                artist_data["seeking_venue"] = False
 
-        db.session.add(new_artist)
-        db.session.commit()
+            new_artist = Artist(**artist_data)
 
-    except:
-        error = True
-        db.session.rollback()
-        print(sys.exc_info())
-    finally:
-        db.session.close()
+            db.session.add(new_artist)
+            db.session.commit()
+            flash("Artist " + request.form["name"] + " was successfully listed!")
 
-    if error:
-        flash(
-            "An error occurred. Artist "
-            + request.form.get("name")
-            + " could not be listed."
-        )
-        return render_template("pages/home.html")
+        except:
+            db.session.rollback()
+            print(sys.exc_info())
+        finally:
+            db.session.close()
+
     else:
-        flash("Artist " + request.form["name"] + " was successfully listed!")
-        return render_template("pages/home.html")
+        for field, message in form.errors.items():
+            flash(field + ' - ' + str(message), 'danger')
+            
+    return render_template("pages/home.html")
 
 
 #  Shows
