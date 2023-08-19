@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask_wtf import Form
+from flask_wtf import FlaskForm
 from wtforms import (
     StringField,
     SelectField,
@@ -7,10 +7,10 @@ from wtforms import (
     DateTimeField,
     BooleanField,
 )
-from wtforms.validators import DataRequired, AnyOf, URL
+from wtforms.validators import DataRequired, AnyOf, URL, Regexp
 
 
-class ShowForm(Form):
+class ShowForm(FlaskForm):
     artist_id = StringField("artist_id")
     venue_id = StringField("venue_id")
     start_time = DateTimeField(
@@ -18,7 +18,7 @@ class ShowForm(Form):
     )
 
 
-class VenueForm(Form):
+class VenueForm(FlaskForm):
     name = StringField("name", validators=[DataRequired()])
     city = StringField("city", validators=[DataRequired()])
     state = SelectField(
@@ -79,7 +79,7 @@ class VenueForm(Form):
         ],
     )
     address = StringField("address", validators=[DataRequired()])
-    phone = StringField("phone")
+    phone = StringField("phone", validators=[DataRequired(), Regexp(r"^(\([0-9]{3}\) ?|[0-9]{3}-)[0-9]{3}-[0-9]{4}$", message = 'Please enter a phone number in the following format: 000-000-0000')])
     image_link = StringField("image_link")
     genres = SelectMultipleField(
         # TODO implement enum restriction
@@ -108,14 +108,14 @@ class VenueForm(Form):
         ],
     )
     facebook_link = StringField("facebook_link", validators=[URL()])
-    website_link = StringField("website_link")
+    website = StringField("website", validators=[URL()])
 
     seeking_talent = BooleanField("seeking_talent")
 
     seeking_description = StringField("seeking_description")
 
 
-class ArtistForm(Form):
+class ArtistForm(FlaskForm):
     name = StringField("name", validators=[DataRequired()])
     city = StringField("city", validators=[DataRequired()])
     state = SelectField(
@@ -175,10 +175,7 @@ class ArtistForm(Form):
             ("WY", "WY"),
         ],
     )
-    phone = StringField(
-        # TODO implement validation logic for phone
-        "phone"
-    )
+    phone = StringField("phone", validators=[DataRequired(), Regexp(r"^(\([0-9]{3}\) ?|[0-9]{3}-)[0-9]{3}-[0-9]{4}$", message = 'Please enter a phone number in the following format: 000-000-0000')])
     image_link = StringField("image_link")
     genres = SelectMultipleField(
         "genres",
@@ -211,7 +208,7 @@ class ArtistForm(Form):
         validators=[URL()],
     )
 
-    website_link = StringField("website_link")
+    website = StringField("website", validators=[URL()])
 
     seeking_venue = BooleanField("seeking_venue")
 
